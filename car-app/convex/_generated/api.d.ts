@@ -8,7 +8,10 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
+import type * as http from "../http.js";
 import type * as spottedCars from "../spottedCars.js";
+import type * as userProfile from "../userProfile.js";
 import type * as watchlist from "../watchlist.js";
 
 import type {
@@ -18,7 +21,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
+  http: typeof http;
   spottedCars: typeof spottedCars;
+  userProfile: typeof userProfile;
   watchlist: typeof watchlist;
 }>;
 

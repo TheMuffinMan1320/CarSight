@@ -36,6 +36,7 @@ type SpottedCar = {
 	horsepower?: number;
 	spottedDate?: string;
 	price?: number;
+	isFavorite?: boolean;
 	imageUrl: string | null;
 };
 
@@ -57,7 +58,7 @@ function formatPriceCompact(price: number): string {
 
 // ─── Car Card ────────────────────────────────────────────────────────────────
 
-function CarCard({ car, onPress }: { car: SpottedCar; onPress: () => void }) {
+function CarCard({ car, onPress, onToggleFavorite }: { car: SpottedCar; onPress: () => void; onToggleFavorite: () => void }) {
 	const colorScheme = useColorScheme() ?? "light";
 	const isDark = colorScheme === "dark";
 
@@ -85,6 +86,17 @@ function CarCard({ car, onPress }: { car: SpottedCar; onPress: () => void }) {
 						{car.brand.toUpperCase()}
 					</Text>
 				</View>
+				<TouchableOpacity
+					style={styles.starBtn}
+					onPress={(e) => { e.stopPropagation?.(); onToggleFavorite(); }}
+					hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+				>
+					<IconSymbol
+						name={car.isFavorite ? "star.fill" : "star"}
+						size={14}
+						color={car.isFavorite ? "#FFD700" : "rgba(255,255,255,0.7)"}
+					/>
+				</TouchableOpacity>
 			</View>
 
 			<View style={[styles.cardFooter, { backgroundColor: isDark ? "#1C1C2E" : "#FFFFFF" }]}>
@@ -465,6 +477,7 @@ export default function CollectionScreen() {
 	const [sortDir, setSortDir] = useState<SortDir>("desc");
 
 	const cars = useQuery(api.spottedCars.getAllSpotted) as SpottedCar[] | undefined;
+	const toggleFavoriteMutation = useMutation(api.spottedCars.toggleFavorite);
 
 	const brands = useMemo(() => {
 		if (!cars) return [];
@@ -474,7 +487,11 @@ export default function CollectionScreen() {
 	const displayedCars = useMemo(() => {
 		if (!cars) return [];
 		const filtered =
-			activeBrand === "All" ? cars : cars.filter((c) => c.brand === activeBrand);
+			activeBrand === "Favorites"
+				? cars.filter((c) => c.isFavorite === true)
+				: activeBrand === "All"
+				? cars
+				: cars.filter((c) => c.brand === activeBrand);
 		return [...filtered].sort((a, b) => {
 			let v = 0;
 			if (sortKey === "date")
@@ -531,7 +548,7 @@ export default function CollectionScreen() {
 						showsHorizontalScrollIndicator={false}
 						contentContainerStyle={styles.filterBar}
 					>
-						{["All", ...brands].map((b) => {
+						{["Favorites", "All", ...brands].map((b) => {
 							const active = activeBrand === b;
 							return (
 								<TouchableOpacity
@@ -626,13 +643,13 @@ export default function CollectionScreen() {
 					columnWrapperStyle={styles.gridRow}
 					showsVerticalScrollIndicator={false}
 					renderItem={({ item }) => (
-						<CarCard car={item} onPress={() => setSelectedCar(item)} />
+						<CarCard car={item} onPress={() => setSelectedCar(item)} onToggleFavorite={() => toggleFavoriteMutation({ id: item._id })} />
 					)}
 					ListEmptyComponent={
 						<View style={[styles.centered, { marginTop: 60 }]}>
-							<Text style={styles.emptyEmoji}>🔍</Text>
+							<Text style={styles.emptyEmoji}>{activeBrand === "Favorites" ? "⭐" : "🔍"}</Text>
 							<Text style={[styles.emptyTitle, { color: isDark ? "#ECEDEE" : "#11181C" }]}>
-								No {activeBrand} cars
+								{activeBrand === "Favorites" ? "No favorites yet" : `No ${activeBrand} cars`}
 							</Text>
 						</View>
 					}
@@ -751,6 +768,19 @@ const styles = StyleSheet.create({
 	statPill: { flexDirection: "row", alignItems: "center", gap: 2 },
 	statPillEmoji: { fontSize: 10 },
 	statPillText: { fontSize: 11, fontWeight: "500" },
+
+	// Star button on card
+	starBtn: {
+		position: "absolute",
+		bottom: 6,
+		right: 6,
+		width: 26,
+		height: 26,
+		borderRadius: 13,
+		backgroundColor: "rgba(0,0,0,0.4)",
+		justifyContent: "center",
+		alignItems: "center",
+	},
 
 	// FAB
 	fab: {
