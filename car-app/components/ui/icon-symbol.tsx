@@ -17,9 +17,11 @@ const MAPPING = {
 	"house.fill": "home",
 	"list.bullet": "list",
 	"square.grid.2x2.fill": "grid-view",
-  "magnifyingglass": "image-search",
+  	"magnifyingglass": "image-search",
+	"person.fill": "person",
 	"chevron.left.forwardslash.chevron.right": "code",
 	"chevron.right": "chevron-right",
+	"plus": "add",
 } as IconMapping;
 
 /**

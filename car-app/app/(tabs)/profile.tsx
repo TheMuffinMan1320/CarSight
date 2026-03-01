@@ -8,16 +8,13 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Fonts } from "@/constants/theme";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-const watchlist = () => {
+const profile = () => {
   return (
-    <SafeAreaView>
-      <ThemedView>
-        <ThemedText>watchlist</ThemedText>
-      </ThemedView>
-    </SafeAreaView> 
+    <ThemedView>
+      <ThemedText>profile</ThemedText>
+    </ThemedView>
   )
 }
 
-export default watchlist
+export default profile
