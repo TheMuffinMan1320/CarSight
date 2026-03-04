@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import PhotographerCalendar from "@/components/photographer-calendar";
 import {
 	View,
 	Text,
@@ -454,6 +455,29 @@ export default function ProfileScreen() {
 						</View>
 					)}
 				</View>
+
+			{/* Schedule — photographers only */}
+				{isPhotographer && profile?.userId ? (
+					<>
+						<Text
+							style={[
+								styles.sectionTitle,
+								{ color: isDark ? "#9BA1A6" : "#687076" },
+							]}
+						>
+							SCHEDULE
+						</Text>
+						<View style={{ marginHorizontal: 16 }}>
+							<PhotographerCalendar
+								photographerId={profile.userId}
+								isOwner
+								currentUserId={profile.userId}
+								isDark={isDark}
+								tint={tint}
+							/>
+						</View>
+					</>
+				) : null}
 
 				<View style={{ height: 48 }} />
 			</ScrollView>

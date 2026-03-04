@@ -9,7 +9,11 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as availability from "../availability.js";
+import type * as comments from "../comments.js";
+import type * as follows from "../follows.js";
 import type * as http from "../http.js";
+import type * as posts from "../posts.js";
 import type * as spottedCars from "../spottedCars.js";
 import type * as userProfile from "../userProfile.js";
 import type * as watchlist from "../watchlist.js";
@@ -22,7 +26,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  availability: typeof availability;
+  comments: typeof comments;
+  follows: typeof follows;
   http: typeof http;
+  posts: typeof posts;
   spottedCars: typeof spottedCars;
   userProfile: typeof userProfile;
   watchlist: typeof watchlist;

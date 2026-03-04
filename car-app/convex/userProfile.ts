@@ -42,6 +42,31 @@ export const upsertProfile = mutation({
 	},
 });
 
+export const getProfileById = query({
+	args: { userId: v.id("users") },
+	handler: async (ctx, { userId }) => {
+		const profile = await ctx.db
+			.query("userProfile")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.first();
+		const imageUrl = profile?.imageStorageId
+			? await ctx.storage.getUrl(profile.imageStorageId)
+			: null;
+		return {
+			displayName: profile?.displayName ?? "Car Spotter",
+			isPhotographer: profile?.isPhotographer ?? false,
+			portfolioUrl: profile?.portfolioUrl ?? null,
+			imageUrl,
+		};
+	},
+});
+
+export const getCurrentUserId = query({
+	handler: async (ctx) => {
+		return await getAuthUserId(ctx);
+	},
+});
+
 export const generateUploadUrl = mutation({
 	handler: async (ctx) => {
 		const userId = await getAuthUserId(ctx);
