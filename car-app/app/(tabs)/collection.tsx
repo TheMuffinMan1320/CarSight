@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -78,7 +79,7 @@ function CarCard({ car, onPress, onToggleFavorite }: { car: SpottedCar; onPress:
 							{ backgroundColor: isDark ? "#252538" : "#F0F0F8" },
 						]}
 					>
-						<Text style={styles.placeholderEmoji}>🚗</Text>
+						<Ionicons name="car-sport-outline" size={40} color={isDark ? "#4A5568" : "#A0AEC0"} />
 					</View>
 				)}
 				<View style={styles.brandStrip}>
@@ -109,7 +110,7 @@ function CarCard({ car, onPress, onToggleFavorite }: { car: SpottedCar; onPress:
 				<View style={styles.cardStats}>
 					{car.horsepower !== undefined && (
 						<View style={styles.statPill}>
-							<Text style={styles.statPillEmoji}>⚡</Text>
+							<Ionicons name="flash-outline" size={10} color={isDark ? "#9BA1A6" : "#687076"} />
 							<Text style={[styles.statPillText, { color: isDark ? "#9BA1A6" : "#687076" }]}>
 								{car.horsepower}
 							</Text>
@@ -117,7 +118,7 @@ function CarCard({ car, onPress, onToggleFavorite }: { car: SpottedCar; onPress:
 					)}
 					{car.price !== undefined && (
 						<View style={styles.statPill}>
-							<Text style={styles.statPillEmoji}>💰</Text>
+							<Ionicons name="pricetag-outline" size={10} color={isDark ? "#9BA1A6" : "#687076"} />
 							<Text style={[styles.statPillText, { color: isDark ? "#9BA1A6" : "#687076" }]}>
 								{formatPriceCompact(car.price)}
 							</Text>
@@ -182,7 +183,7 @@ function CarDetailModal({
 									{ backgroundColor: isDark ? "#252538" : "#F0F0F8" },
 								]}
 							>
-								<Text style={styles.detailPlaceholderEmoji}>🚗</Text>
+								<Ionicons name="car-sport-outline" size={80} color={isDark ? "#4A5568" : "#A0AEC0"} />
 							</View>
 						)}
 						<TouchableOpacity style={styles.closeBtn} onPress={onClose}>
@@ -204,7 +205,7 @@ function CarDetailModal({
 
 						<View style={styles.statsRow}>
 							<View style={styles.statItem}>
-								<Text style={styles.statEmoji}>📅</Text>
+								<Ionicons name="calendar-outline" size={22} color={isDark ? "#9BA1A6" : "#687076"} />
 								<Text style={[styles.statLabel, { color: isDark ? "#9BA1A6" : "#687076" }]}>
 									SPOTTED
 								</Text>
@@ -221,7 +222,7 @@ function CarDetailModal({
 							/>
 
 							<View style={styles.statItem}>
-								<Text style={styles.statEmoji}>⚡</Text>
+								<Ionicons name="flash-outline" size={22} color={isDark ? "#9BA1A6" : "#687076"} />
 								<Text style={[styles.statLabel, { color: isDark ? "#9BA1A6" : "#687076" }]}>
 									POWER
 								</Text>
@@ -238,7 +239,7 @@ function CarDetailModal({
 							/>
 
 							<View style={styles.statItem}>
-								<Text style={styles.statEmoji}>💰</Text>
+								<Ionicons name="pricetag-outline" size={22} color={isDark ? "#9BA1A6" : "#687076"} />
 								<Text style={[styles.statLabel, { color: isDark ? "#9BA1A6" : "#687076" }]}>
 									PRICE
 								</Text>
@@ -472,26 +473,22 @@ export default function CollectionScreen() {
 
 	const [selectedCar, setSelectedCar] = useState<SpottedCar | null>(null);
 	const [showAdd, setShowAdd] = useState(false);
-	const [activeBrand, setActiveBrand] = useState("All");
+	const [searchQuery, setSearchQuery] = useState("");
+	const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 	const [sortKey, setSortKey] = useState<SortKey>("date");
 	const [sortDir, setSortDir] = useState<SortDir>("desc");
 
 	const cars = useQuery(api.spottedCars.getAllSpotted) as SpottedCar[] | undefined;
 	const toggleFavoriteMutation = useMutation(api.spottedCars.toggleFavorite);
 
-	const brands = useMemo(() => {
-		if (!cars) return [];
-		return Array.from(new Set(cars.map((c) => c.brand))).sort();
-	}, [cars]);
-
 	const displayedCars = useMemo(() => {
 		if (!cars) return [];
-		const filtered =
-			activeBrand === "Favorites"
-				? cars.filter((c) => c.isFavorite === true)
-				: activeBrand === "All"
-				? cars
-				: cars.filter((c) => c.brand === activeBrand);
+		const q = searchQuery.trim().toLowerCase();
+		const filtered = cars.filter((c) => {
+			if (showFavoritesOnly && !c.isFavorite) return false;
+			if (q) return c.brand.toLowerCase().includes(q) || c.model.toLowerCase().includes(q);
+			return true;
+		});
 		return [...filtered].sort((a, b) => {
 			let v = 0;
 			if (sortKey === "date")
@@ -504,7 +501,7 @@ export default function CollectionScreen() {
 				v = (a.price ?? 0) - (b.price ?? 0);
 			return sortDir === "asc" ? v : -v;
 		});
-	}, [cars, activeBrand, sortKey, sortDir]);
+	}, [cars, searchQuery, showFavoritesOnly, sortKey, sortDir]);
 
 	const handleSort = (key: SortKey, defaultDir: SortDir) => {
 		if (sortKey === key) {
@@ -533,7 +530,7 @@ export default function CollectionScreen() {
 				</Text>
 				{cars !== undefined && (
 					<Text style={[styles.headerCount, { color: isDark ? "#9BA1A6" : "#687076" }]}>
-						{displayedCars.length}{activeBrand !== "All" ? ` of ${cars.length}` : ""}{" "}
+						{displayedCars.length}{(searchQuery || showFavoritesOnly) ? ` of ${cars.length}` : ""}{" "}
 						{cars.length === 1 ? "car" : "cars"}
 					</Text>
 				)}
@@ -541,38 +538,19 @@ export default function CollectionScreen() {
 
 			{cars !== undefined && cars.length > 0 && (
 				<>
-					{/* Brand filter */}
-					<View style={styles.filterBarWrap}>
-					<ScrollView
-						horizontal
-						showsHorizontalScrollIndicator={false}
-						contentContainerStyle={styles.filterBar}
-					>
-						{["Favorites", "All", ...brands].map((b) => {
-							const active = activeBrand === b;
-							return (
-								<TouchableOpacity
-									key={b}
-									style={[
-										styles.filterChip,
-										active
-										? { backgroundColor: "transparent", borderColor: tint }
-										: { backgroundColor: isDark ? "#1C1C2E" : "#EBEBEB", borderColor: "transparent" },
-									]}
-									onPress={() => setActiveBrand(b)}
-								>
-									<Text
-										style={[
-											styles.filterChipText,
-											{ color: active ? tint : isDark ? "#9BA1A6" : "#687076" },
-										]}
-									>
-										{b}
-									</Text>
-								</TouchableOpacity>
-							);
-						})}
-					</ScrollView>
+					{/* Search bar */}
+					<View style={[styles.searchBarWrap, { backgroundColor: isDark ? "#1C1C2E" : "#EBEBF0" }]}>
+						<Ionicons name="search-outline" size={16} color={isDark ? "#9BA1A6" : "#687076"} />
+						<TextInput
+							style={[styles.searchInput, { color: isDark ? "#ECEDEE" : "#11181C" }]}
+							placeholder="Search brand or model..."
+							placeholderTextColor={isDark ? "#4A5568" : "#A0AEC0"}
+							value={searchQuery}
+							onChangeText={setSearchQuery}
+							returnKeyType="search"
+							autoCapitalize="words"
+							clearButtonMode="while-editing"
+						/>
 					</View>
 
 					{/* Sort bar */}
@@ -582,6 +560,19 @@ export default function CollectionScreen() {
 						showsHorizontalScrollIndicator={false}
 						contentContainerStyle={styles.sortBar}
 					>
+						<TouchableOpacity
+							style={[
+								styles.filterChip,
+								showFavoritesOnly
+									? { backgroundColor: "transparent", borderColor: tint }
+									: { backgroundColor: isDark ? "#1C1C2E" : "#EBEBEB", borderColor: "transparent" },
+							]}
+							onPress={() => setShowFavoritesOnly((v) => !v)}
+						>
+							<Text style={[styles.filterChipText, { color: showFavoritesOnly ? tint : isDark ? "#9BA1A6" : "#687076" }]}>
+								Favorites
+							</Text>
+						</TouchableOpacity>
 						{SORT_OPTIONS.map(({ key, label, defaultDir }) => {
 							const active = sortKey === key;
 							return (
@@ -647,9 +638,9 @@ export default function CollectionScreen() {
 					)}
 					ListEmptyComponent={
 						<View style={[styles.centered, { marginTop: 60 }]}>
-							<Text style={styles.emptyEmoji}>{activeBrand === "Favorites" ? "⭐" : "🔍"}</Text>
+							<Ionicons name={showFavoritesOnly ? "star-outline" : "search-outline"} size={40} color={isDark ? "#4A5568" : "#A0AEC0"} />
 							<Text style={[styles.emptyTitle, { color: isDark ? "#ECEDEE" : "#11181C" }]}>
-								{activeBrand === "Favorites" ? "No favorites yet" : `No ${activeBrand} cars`}
+								{showFavoritesOnly ? "No favorites yet" : "No results found"}
 							</Text>
 						</View>
 					}
@@ -692,9 +683,24 @@ const styles = StyleSheet.create({
 	headerTitle: { fontSize: 28, fontWeight: "700" },
 	headerCount: { fontSize: 15 },
 
-	// Brand filter
-	filterBarWrap: { paddingVertical: 7, marginBottom: 4 },
-	filterBar: { paddingHorizontal: 16, gap: 8 },
+	// Search bar
+	searchBarWrap: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginHorizontal: 16,
+		marginTop: 10,
+		marginBottom: 6,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 12,
+		gap: 8,
+	},
+	searchInput: {
+		flex: 1,
+		fontSize: 14,
+		paddingVertical: 0,
+	},
+	// Favorites chip
 	filterChip: {
 		paddingHorizontal: 14,
 		paddingVertical: 6,

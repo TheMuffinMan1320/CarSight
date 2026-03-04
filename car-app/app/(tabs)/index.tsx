@@ -18,6 +18,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -49,6 +51,12 @@ const POST_TYPE_CONFIG = {
 	car_meet: { label: "Car Meet", icon: "🏁", color: "#E85D04" },
 	photography: { label: "Photography", icon: "📸", color: "#7B2D8B" },
 } as const;
+
+function PostTypeIcon({ type, size, color }: { type: PostType; size: number; color: string }) {
+	if (type === "spotted_car") return <Ionicons name="car-sport-outline" size={size} color={color} />;
+	if (type === "car_meet") return <Ionicons name="people-outline" size={size} color={color} />;
+	return <Ionicons name="camera-outline" size={size} color={color} />;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -151,7 +159,10 @@ function PostCard({
 										{ backgroundColor: isDark ? "#2A1A3E" : "#F3E8FF" },
 									]}
 								>
-									<Text style={styles.proBadgeText}>📸 Pro</Text>
+									<View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+									<Ionicons name="camera-outline" size={10} color="#7B2D8B" />
+									<Text style={styles.proBadgeText}>Pro</Text>
+								</View>
 								</View>
 							)}
 						</View>
@@ -165,7 +176,7 @@ function PostCard({
 							{ backgroundColor: typeConfig.color + "20" },
 						]}
 					>
-						<Text style={styles.typeBadgeIcon}>{typeConfig.icon}</Text>
+						<PostTypeIcon type={post.type} size={12} color={typeConfig.color} />
 						<Text style={[styles.typeBadgeLabel, { color: typeConfig.color }]}>
 							{typeConfig.label}
 						</Text>
@@ -203,9 +214,10 @@ function PostCard({
 									</Text>
 								) : null}
 								{post.eventDate ? (
-									<Text style={[styles.eventMetaText, { color: textSecondary }]}>
-										📅 {post.eventDate}
-									</Text>
+									<View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+										<Ionicons name="calendar-outline" size={13} color={textSecondary} />
+										<Text style={[styles.eventMetaText, { color: textSecondary }]}>{post.eventDate}</Text>
+									</View>
 								) : null}
 							</View>
 						) : null}
@@ -213,11 +225,18 @@ function PostCard({
 				) : null}
 
 				{/* Car label */}
-				{post.type === "spotted_car" && (post.brand || post.model) ? (
+				{post.type === "spotted_car" && (post.brand || post.model || post.location) ? (
 					<View style={styles.carDetails}>
-						<Text style={[styles.carLabel, { color: textPrimary }]}>
-							{[post.brand, post.model].filter(Boolean).join(" ")}
-						</Text>
+						{(post.brand || post.model) ? (
+							<Text style={[styles.carLabel, { color: textPrimary }]}>
+								{[post.brand, post.model].filter(Boolean).join(" ")}
+							</Text>
+						) : null}
+						{post.location ? (
+							<Text style={[styles.carLocation, { color: textSecondary }]}>
+								📍 {post.location}
+							</Text>
+						) : null}
 					</View>
 				) : null}
 
@@ -228,7 +247,11 @@ function PostCard({
 						onPress={handleLike}
 						activeOpacity={0.7}
 					>
-						<Text style={styles.likeIcon}>{post.isLiked ? "❤️" : "🤍"}</Text>
+						<Ionicons
+							name={post.isLiked ? "heart" : "heart-outline"}
+							size={20}
+							color={post.isLiked ? "#E0245E" : textSecondary}
+						/>
 						{post.likeCount > 0 ? (
 							<Text
 								style={[
@@ -248,7 +271,7 @@ function PostCard({
 						onPress={() => onPressComment(post._id)}
 						activeOpacity={0.7}
 					>
-						<Text style={styles.commentIcon}>💬</Text>
+						<Ionicons name="chatbox-outline" size={20} color={textSecondary} />
 						{post.commentCount > 0 ? (
 							<Text style={[styles.actionCount, { color: textSecondary }]}>
 								{post.commentCount}
@@ -365,7 +388,7 @@ function CommentsSheet({
 				<ActivityIndicator color={tint} style={{ flex: 1, alignSelf: "center", marginTop: 32 }} />
 			) : comments.length === 0 ? (
 				<View style={styles.commentsEmpty}>
-					<Text style={styles.commentsEmptyIcon}>💬</Text>
+					<Ionicons name="chatbox-outline" size={40} color={textSecondary} />
 					<Text style={[styles.commentsEmptyText, { color: textSecondary }]}>
 						No comments yet — be the first!
 					</Text>
@@ -588,9 +611,10 @@ function UserProfileSheet({
 								{ backgroundColor: isDark ? "#2A1A3E" : "#F3E8FF" },
 							]}
 						>
-							<Text style={[styles.profilePhotoBadgeText, { color: "#7B2D8B" }]}>
-								📸 Professional Photographer
-							</Text>
+							<View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+								<Ionicons name="camera-outline" size={13} color="#7B2D8B" />
+								<Text style={[styles.profilePhotoBadgeText, { color: "#7B2D8B" }]}>Photographer</Text>
+							</View>
 						</View>
 					) : null}
 				</View>
@@ -703,9 +727,11 @@ function UserProfileSheet({
 											{ backgroundColor: isDark ? "#252538" : "#EBEBF0" },
 										]}
 									>
-										<Text style={styles.gridPlaceholderIcon}>
-											{POST_TYPE_CONFIG[post.type as PostType].icon}
-										</Text>
+										<PostTypeIcon
+											type={post.type as PostType}
+											size={28}
+											color={isDark ? "#4A5568" : "#9BA1A6"}
+										/>
 									</View>
 								)}
 							</View>
@@ -762,6 +788,7 @@ function CreatePostModal({
 	const [location, setLocation] = useState("");
 	const [eventDate, setEventDate] = useState("");
 	const [posting, setPosting] = useState(false);
+	const [fetchingLocation, setFetchingLocation] = useState(false);
 
 	const bgColor = isDark ? "#151718" : "#FFFFFF";
 	const cardBg = isDark ? "#1C1C2E" : "#F5F5F8";
@@ -780,6 +807,7 @@ function CreatePostModal({
 		setLocation("");
 		setEventDate("");
 		setPosting(false);
+		setFetchingLocation(false);
 	};
 
 	const handleClose = () => {
@@ -814,6 +842,32 @@ function CreatePostModal({
 			quality: 0.85,
 		});
 		if (!result.canceled) setImageUri(result.assets[0].uri);
+	};
+
+	const fetchLocation = async () => {
+		const { status } = await Location.requestForegroundPermissionsAsync();
+		if (status !== "granted") {
+			Alert.alert("Permission needed", "Please allow location access in Settings.");
+			return;
+		}
+		setFetchingLocation(true);
+		try {
+			const pos = await Location.getCurrentPositionAsync({
+				accuracy: Location.Accuracy.Balanced,
+			});
+			const [geo] = await Location.reverseGeocodeAsync({
+				latitude: pos.coords.latitude,
+				longitude: pos.coords.longitude,
+			});
+			if (geo) {
+				const parts = [geo.city, geo.region, geo.country].filter(Boolean);
+				setLocation(parts.join(", "));
+			}
+		} catch {
+			Alert.alert("Error", "Could not fetch location.");
+		} finally {
+			setFetchingLocation(false);
+		}
 	};
 
 	const handleSubmit = async () => {
@@ -934,7 +988,7 @@ function CreatePostModal({
 											onPress={() => setPostType(type)}
 											activeOpacity={0.8}
 										>
-											<Text style={styles.typeOptionIcon}>{cfg.icon}</Text>
+											<PostTypeIcon type={type} size={28} color={cfg.color} />
 											<View style={{ flex: 1 }}>
 												<Text
 													style={[
@@ -956,7 +1010,7 @@ function CreatePostModal({
 														? "Share a car you spotted in the wild"
 														: type === "car_meet"
 														? "Post about a car meet or event"
-														: "Announce a photography session or time slot"}
+														: "Announce a photography session"}
 												</Text>
 											</View>
 											{selected ? (
@@ -1004,9 +1058,7 @@ function CreatePostModal({
 									{ backgroundColor: typeConfig.color + "18" },
 								]}
 							>
-								<Text style={styles.selectedTypePillIcon}>
-									{typeConfig.icon}
-								</Text>
+								<PostTypeIcon type={postType} size={16} color={typeConfig.color} />
 								<Text
 									style={[
 										styles.selectedTypePillLabel,
@@ -1084,6 +1136,31 @@ function CreatePostModal({
 										onChangeText={setModel}
 										autoCapitalize="words"
 									/>
+								<View style={styles.locationRow}>
+									<TextInput
+										style={[
+											styles.locationInput,
+											{ backgroundColor: inputBg, color: textPrimary },
+										]}
+										placeholder="Location (optional)"
+										placeholderTextColor={isDark ? "#4A5568" : "#A0AEC0"}
+										value={location}
+										onChangeText={setLocation}
+										autoCapitalize="words"
+									/>
+									<TouchableOpacity
+										style={[styles.locationBtn, { backgroundColor: isDark ? "#252538" : "#EEF2FF" }]}
+										onPress={fetchLocation}
+										activeOpacity={0.7}
+										disabled={fetchingLocation}
+									>
+										{fetchingLocation ? (
+											<ActivityIndicator size="small" color={tint} />
+										) : (
+											<Text style={[styles.locationBtnText, { color: tint }]}>📍 Use Current</Text>
+										)}
+									</TouchableOpacity>
+								</View>
 								</View>
 							) : (
 								<View style={styles.fieldGroup}>
@@ -1241,7 +1318,7 @@ export default function FeedScreen() {
 				</View>
 			) : posts.length === 0 ? (
 				<ScrollView contentContainerStyle={styles.emptyWrap}>
-					<Text style={styles.emptyIcon}>🚗</Text>
+					<Ionicons name="car-sport-outline" size={56} color={tint} style={{ marginBottom: 4 }} />
 					<Text style={[styles.emptyTitle, { color: textPrimary }]}>
 						No posts yet
 					</Text>
@@ -1706,5 +1783,33 @@ const styles = StyleSheet.create({
 		borderRadius: 20,
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	carLocation: {
+		fontSize: 12,
+		marginTop: 2,
+	},
+	locationRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		marginTop: 8,
+	},
+	locationInput: {
+		flex: 1,
+		height: 44,
+		borderRadius: 10,
+		paddingHorizontal: 14,
+		fontSize: 15,
+	},
+	locationBtn: {
+		height: 44,
+		paddingHorizontal: 12,
+		borderRadius: 10,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	locationBtnText: {
+		fontSize: 13,
+		fontWeight: "600",
 	},
 });

@@ -13,6 +13,7 @@ import {
 	ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -61,7 +62,7 @@ function WatchRow({
 						onError={handleLogoError}
 					/>
 				) : (
-					<Text style={styles.rowEmoji}>🚗</Text>
+					<Ionicons name="car-sport-outline" size={22} color={isDark ? "#9BA1A6" : "#687076"} />
 				)}
 			</View>
 			<View style={styles.rowText}>

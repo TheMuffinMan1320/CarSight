@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Colors, Fonts } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function SignInScreen() {
@@ -86,7 +87,7 @@ export default function SignInScreen() {
 				>
 					{/* Branding */}
 					<View style={styles.branding}>
-						<Text style={styles.brandEmoji}>🚗</Text>
+						<Ionicons name="car-sport-outline" size={56} color={tint} style={{ marginBottom: 12 }} />
 						<Text
 							style={[
 								styles.brandName,
