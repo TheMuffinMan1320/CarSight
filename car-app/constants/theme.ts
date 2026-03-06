@@ -27,6 +27,53 @@ export const Colors = {
   },
 };
 
+/**
+ * Semantic app-level color tokens for light and dark mode.
+ * Use with the useAppTheme() hook.
+ */
+export const AppColors = {
+  light: {
+    pageBg: '#F6F6FA',          // screen background
+    surface: '#FFFFFF',          // cards, rows
+    modalBg: '#FFFFFF',          // bottom sheets / modals
+    inputBg: '#F5F5F8',          // text input backgrounds
+    subtleBg: '#F0F0F8',         // icon wrappers, image placeholders, chart track
+    avatarBg: '#E8E8F0',         // avatar circles
+    searchBg: '#EBEBF0',         // search bars, header borders, grid placeholders
+    chipBg: '#EBEBEB',           // filter / sort chips
+    divider: '#EBEBEB',          // section dividers
+    separator: '#F0F0F4',        // thin separators within cards / list items
+    borderSubtle: '#E0E0E8',     // subtle borders (photo picker, disabled btn)
+    textPrimary: '#11181C',
+    textSecondary: '#687076',
+    textPlaceholder: '#A0AEC0',
+    iconOnTint: '#FFFFFF',       // icon / text rendered on a tint-coloured surface
+    iconInactive: '#C7C7CC',     // inactive close / dismiss icons
+    switchTrackOff: '#D1D1D6',   // switch track (off state) and handle bar
+    photographyBg: '#F3E8FF',    // photographer badge background
+  },
+  dark: {
+    pageBg: '#0F0F17',
+    surface: '#1C1C2E',
+    modalBg: '#151718',
+    inputBg: '#252538',
+    subtleBg: '#252538',
+    avatarBg: '#252538',
+    searchBg: '#1C1C2E',
+    chipBg: '#1C1C2E',
+    divider: '#2A2A3E',
+    separator: '#252538',
+    borderSubtle: '#252538',
+    textPrimary: '#ECEDEE',
+    textSecondary: '#9BA1A6',
+    textPlaceholder: '#4A5568',
+    iconOnTint: '#11181C',
+    iconInactive: '#3A3A4E',
+    switchTrackOff: '#3A3A4E',
+    photographyBg: '#2A1A3E',
+  },
+};
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
