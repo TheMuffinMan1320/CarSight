@@ -26,6 +26,7 @@ export const upsertProfile = mutation({
 		imageStorageId: v.optional(v.id("_storage")),
 		isPhotographer: v.optional(v.boolean()),
 		portfolioUrl: v.optional(v.string()),
+		pushToken: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);

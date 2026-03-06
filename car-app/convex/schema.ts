@@ -25,6 +25,7 @@ export default defineSchema({
 		imageStorageId: v.optional(v.id("_storage")),
 		isPhotographer: v.optional(v.boolean()),
 		portfolioUrl: v.optional(v.string()),
+		pushToken: v.optional(v.string()),
 	}).index("by_user", ["userId"]),
 	posts: defineTable({
 		userId: v.id("users"),

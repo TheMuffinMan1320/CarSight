@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
 	View,
 	Text,
@@ -9,9 +9,11 @@ import {
 	ActivityIndicator,
 	Alert,
 	Pressable,
+	Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as Notifications from "expo-notifications";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -23,7 +25,18 @@ import { PostCard } from "@/components/feed/post-card";
 import { CommentsSheet } from "@/components/feed/comments-sheet";
 import { UserProfileSheet } from "@/components/feed/user-profile-sheet";
 import { CreatePostModal } from "@/components/feed/create-post-modal";
+import { SpotMapModal } from "@/components/feed/spot-map-modal";
 import { FeedPost } from "@/components/feed/types";
+
+Notifications.setNotificationHandler({
+	handleNotification: async () => ({
+		shouldShowAlert: true,
+		shouldPlaySound: true,
+		shouldSetBadge: false,
+		shouldShowBanner: true,
+		shouldShowList: true,
+	}),
+});
 
 export default function FeedScreen() {
 	const { colors, tint } = useAppTheme();
@@ -31,10 +44,33 @@ export default function FeedScreen() {
 	const posts = useQuery(api.posts.getFeedPosts);
 	const currentUserId = useQuery(api.userProfile.getCurrentUserId);
 	const deletePost = useMutation(api.posts.deletePost);
+	const upsertProfile = useMutation(api.userProfile.upsertProfile);
 
 	const [showCreate, setShowCreate] = useState(false);
+	const [showMap, setShowMap] = useState(false);
 	const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | null>(null);
 	const [selectedPostForComments, setSelectedPostForComments] = useState<Id<"posts"> | null>(null);
+
+	// Register for push notifications
+	useEffect(() => {
+		(async () => {
+			const { status: existing } = await Notifications.getPermissionsAsync();
+			let finalStatus = existing;
+			if (existing !== "granted") {
+				const { status } = await Notifications.requestPermissionsAsync();
+				finalStatus = status;
+			}
+			if (finalStatus !== "granted") return;
+			if (Platform.OS === "android") {
+				await Notifications.setNotificationChannelAsync("default", {
+					name: "default",
+					importance: Notifications.AndroidImportance.MAX,
+				});
+			}
+			const tokenData = await Notifications.getExpoPushTokenAsync();
+			await upsertProfile({ pushToken: tokenData.data });
+		})();
+	}, [upsertProfile]);
 
 	const handleDeletePost = useCallback(
 		(postId: Id<"posts">) => {
@@ -62,14 +98,23 @@ export default function FeedScreen() {
 				<Text style={[styles.headerTitle, { color: tint, fontFamily: Fonts?.rounded ?? undefined }]}>
 					CarSight
 				</Text>
-				<TouchableOpacity
-					style={[styles.postBtn, { backgroundColor: tint }]}
-					onPress={() => setShowCreate(true)}
-					activeOpacity={0.85}
-				>
-					<IconSymbol name="plus" size={16} color={colors.iconOnTint} />
-					<Text style={[styles.postBtnText, { color: colors.iconOnTint }]}>Post</Text>
-				</TouchableOpacity>
+				<View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+					<TouchableOpacity
+						style={[styles.mapBtn, { backgroundColor: colors.inputBg }]}
+						onPress={() => setShowMap(true)}
+						activeOpacity={0.85}
+					>
+						<IconSymbol name="map" size={18} color={tint} />
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={[styles.postBtn, { backgroundColor: tint }]}
+						onPress={() => setShowCreate(true)}
+						activeOpacity={0.85}
+					>
+						<IconSymbol name="plus" size={16} color={colors.iconOnTint} />
+						<Text style={[styles.postBtnText, { color: colors.iconOnTint }]}>Post</Text>
+					</TouchableOpacity>
+				</View>
 			</View>
 
 			{/* Feed */}
@@ -106,6 +151,7 @@ export default function FeedScreen() {
 			)}
 
 			<CreatePostModal visible={showCreate} onClose={() => setShowCreate(false)} />
+			<SpotMapModal visible={showMap} onClose={() => setShowMap(false)} />
 
 			{/* User Profile Modal */}
 			<Modal

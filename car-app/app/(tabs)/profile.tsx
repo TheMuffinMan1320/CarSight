@@ -207,7 +207,7 @@ export default function ProfileScreen() {
 							value={isPhotographer}
 							onValueChange={handleTogglePhotographer}
 							trackColor={{ false: colors.switchTrackOff, true: tint }}
-							thumbColor="#FFFFFF"
+							thumbColor={isPhotographer ? colors.iconOnTint : "#FFFFFF"}
 						/>
 					</View>
 

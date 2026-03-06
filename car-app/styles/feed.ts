@@ -25,6 +25,13 @@ export const styles = StyleSheet.create({
 		borderRadius: 20,
 	},
 	postBtnText: { fontSize: 14, fontWeight: "600" },
+	mapBtn: {
+		width: 38,
+		height: 38,
+		borderRadius: 19,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 
 	// Feed list / empty
 	feedList: { padding: 12, paddingBottom: 32 },

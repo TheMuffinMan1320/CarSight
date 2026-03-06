@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 export const generateUploadUrl = mutation({
 	handler: async (ctx) => {
@@ -28,7 +30,16 @@ export const createPost = mutation({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
-		return await ctx.db.insert("posts", { userId, ...args });
+		const postId = await ctx.db.insert("posts", { userId, ...args });
+		if (args.type === "spotted_car" && args.brand && args.model) {
+			await ctx.scheduler.runAfter(0, internal.notifications.checkWatchlistAndNotify, {
+				brand: args.brand,
+				model: args.model,
+				location: args.location,
+				posterUserId: userId as Id<"users">,
+			});
+		}
+		return postId;
 	},
 });
 
@@ -123,6 +134,60 @@ export const getPostsByUser = query({
 					imageUrl,
 					likeCount: likeDocs.length,
 					isLiked,
+				};
+			})
+		);
+	},
+});
+
+export const getWatchlistSpots = query({
+	handler: async (ctx) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) return [];
+
+		const watchlist = await ctx.db
+			.query("watchlist")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.collect();
+
+		if (watchlist.length === 0) return [];
+
+		const allPosts = await ctx.db
+			.query("posts")
+			.order("desc")
+			.collect();
+
+		const spots = allPosts.filter(
+			(p) =>
+				p.type === "spotted_car" &&
+				p.brand &&
+				p.model &&
+				p.location &&
+				watchlist.some(
+					(w) =>
+						w.brand.toLowerCase() === p.brand!.toLowerCase() &&
+						w.model.toLowerCase() === p.model!.toLowerCase()
+				)
+		);
+
+		return await Promise.all(
+			spots.map(async (post) => {
+				const imageUrl = post.imageStorageId
+					? await ctx.storage.getUrl(post.imageStorageId)
+					: null;
+				const profile = await ctx.db
+					.query("userProfile")
+					.withIndex("by_user", (q) => q.eq("userId", post.userId))
+					.first();
+				return {
+					_id: post._id,
+					brand: post.brand!,
+					model: post.model!,
+					location: post.location!,
+					caption: post.caption,
+					imageUrl,
+					authorName: profile?.displayName ?? "Car Spotter",
+					_creationTime: post._creationTime,
 				};
 			})
 		);
