@@ -9,6 +9,10 @@ import {
 	Alert,
 	Linking,
 	Switch,
+	Modal,
+	FlatList,
+	Pressable,
+	StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation } from "convex/react";
@@ -23,17 +27,25 @@ import { StatItem } from "@/components/profile/stat-item";
 import { SpotsChart } from "@/components/profile/spots-chart";
 import { EditNameModal } from "@/components/profile/edit-name-modal";
 import PhotographerCalendar from "@/components/photographer-calendar";
+import { UserProfileSheet } from "@/components/feed/user-profile-sheet";
+import type { Id } from "@/convex/_generated/dataModel";
 
 export default function ProfileScreen() {
 	const { colors, tint, isDark } = useAppTheme();
 
 	const profile = useQuery(api.userProfile.getProfile);
 	const allCars = useQuery(api.spottedCars.getAllSpotted);
-	const watchlist = useQuery(api.watchlist.getAllWatch);
+	const followerCount = useQuery(
+		api.follows.getFollowerCount,
+		profile?.userId ? { targetUserId: profile.userId } : "skip"
+	);
+	const followingUsers = useQuery(api.follows.getFollowingUsers);
 
 	const upsertProfile = useMutation(api.userProfile.upsertProfile);
 	const generateUploadUrl = useMutation(api.userProfile.generateUploadUrl);
 
+	const [showFollowing, setShowFollowing] = useState(false);
+	const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | null>(null);
 	const [editingName, setEditingName] = useState(false);
 	const [nameInput, setNameInput] = useState("");
 	const [portfolioInput, setPortfolioInput] = useState("");
@@ -48,8 +60,7 @@ export default function ProfileScreen() {
 	}, [profile]);
 
 	const totalSpots = allCars?.length ?? 0;
-	const favorites = allCars?.filter((c) => c.isFavorite).length ?? 0;
-	const watchlistCount = watchlist?.length ?? 0;
+	const followingCount = followingUsers?.length ?? 0;
 
 	const displayName = profile?.displayName ?? "Car Spotter";
 	const isPhotographer = profile?.isPhotographer ?? false;
@@ -170,9 +181,12 @@ export default function ProfileScreen() {
 				<View style={[styles.card, styles.statsRow, { backgroundColor: colors.surface }]}>
 					<StatItem value={totalSpots} label="Spotted" />
 					<View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
-					<StatItem value={favorites} label="Favorites" />
+					<TouchableOpacity style={styles.statItem} onPress={() => setShowFollowing(true)} activeOpacity={0.7}>
+						<Text style={[styles.statValue, { color: colors.textPrimary }]}>{followingCount}</Text>
+						<Text style={[styles.statLabel, { color: tint }]}>Following</Text>
+					</TouchableOpacity>
 					<View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
-					<StatItem value={watchlistCount} label="Watchlist" />
+					<StatItem value={followerCount ?? 0} label="Followers" />
 				</View>
 
 				{/* Spot History */}
@@ -265,7 +279,65 @@ export default function ProfileScreen() {
 				<View style={{ height: 48 }} />
 			</ScrollView>
 
-			<EditNameModal
+			{/* Following list sheet */}
+		<Modal visible={showFollowing} animationType="slide" transparent presentationStyle="overFullScreen" onRequestClose={() => setShowFollowing(false)}>
+			<View style={{ flex: 1, justifyContent: "flex-end" }}>
+				<Pressable style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)" }} onPress={() => setShowFollowing(false)} />
+				<View style={[{ borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "80%", backgroundColor: colors.surface }]}>
+					<View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+						<View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.separator }} />
+					</View>
+					<Text style={{ fontSize: 17, fontWeight: "700", color: colors.textPrimary, textAlign: "center", paddingBottom: 12 }}>Following</Text>
+					{(followingUsers ?? []).length === 0 ? (
+						<Text style={{ textAlign: "center", color: colors.textSecondary, paddingVertical: 32, fontSize: 14 }}>
+							You're not following anyone yet
+						</Text>
+					) : (
+						<FlatList
+							data={followingUsers}
+							keyExtractor={(item) => item.userId}
+							renderItem={({ item }) => (
+								<TouchableOpacity
+									style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}
+									onPress={() => { setShowFollowing(false); setSelectedUserId(item.userId as Id<"users">); }}
+									activeOpacity={0.7}
+								>
+									<View style={[styles.avatar, { backgroundColor: colors.avatarBg, width: 44, height: 44, borderRadius: 22 }]}>
+										{item.imageUrl ? (
+											<Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: 22 }} contentFit="cover" />
+										) : (
+											<Text style={[styles.avatarInitial, { color: tint }]}>{item.displayName.charAt(0).toUpperCase()}</Text>
+										)}
+									</View>
+									<View style={{ flex: 1 }}>
+										<Text style={{ fontSize: 15, fontWeight: "600", color: colors.textPrimary }}>{item.displayName}</Text>
+										{item.isPhotographer && <Text style={{ fontSize: 12, color: "#7B2D8B", marginTop: 1 }}>Photographer</Text>}
+									</View>
+								</TouchableOpacity>
+							)}
+						/>
+					)}
+					<View style={{ height: 32 }} />
+				</View>
+			</View>
+		</Modal>
+
+		{/* User profile sheet (collection mode) */}
+		<Modal visible={selectedUserId !== null} animationType="slide" transparent presentationStyle="overFullScreen" onRequestClose={() => setSelectedUserId(null)}>
+			<View style={{ flex: 1, justifyContent: "flex-end" }}>
+				<Pressable style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)" }} onPress={() => setSelectedUserId(null)} />
+				{selectedUserId !== null && (
+					<UserProfileSheet
+						userId={selectedUserId}
+						currentUserId={profile?.userId ?? null}
+						onClose={() => setSelectedUserId(null)}
+						mode="collection"
+					/>
+				)}
+			</View>
+		</Modal>
+
+		<EditNameModal
 				visible={editingName}
 				value={nameInput}
 				onChange={setNameInput}

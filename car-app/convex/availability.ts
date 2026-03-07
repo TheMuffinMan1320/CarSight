@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { internal } from "./_generated/api";
 
 export const addSlot = mutation({
 	args: {
@@ -56,22 +57,35 @@ export const getSlotsForPhotographer = query({
 						? await ctx.storage.getUrl(cp.imageStorageId)
 						: null;
 				}
-				return { ...slot, clientName, clientAvatarUrl };
+				return { ...slot, clientName, clientAvatarUrl, clientPhone: slot.bookedByPhone ?? null };
 			})
 		);
 	},
 });
 
 export const bookSlot = mutation({
-	args: { slotId: v.id("availability") },
-	handler: async (ctx, { slotId }) => {
+	args: { slotId: v.id("availability"), phone: v.string() },
+	handler: async (ctx, { slotId, phone }) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 		const slot = await ctx.db.get(slotId);
 		if (!slot) throw new Error("Slot not found");
 		if (slot.bookedByUserId) throw new Error("Slot already booked");
 		if (slot.photographerId === userId) throw new Error("Cannot book your own slot");
-		await ctx.db.patch(slotId, { bookedByUserId: userId });
+		await ctx.db.patch(slotId, { bookedByUserId: userId, bookedByPhone: phone });
+
+		// Get client display name for the notification
+		const clientProfile = await ctx.db
+			.query("userProfile")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.first();
+		const clientName = clientProfile?.displayName ?? "Someone";
+
+		await ctx.scheduler.runAfter(0, internal.notifications.notifyUser, {
+			userId: slot.photographerId,
+			title: "New Booking!",
+			body: `${clientName} booked your ${slot.date} session (${slot.startTime}–${slot.endTime}). Phone: ${phone}`,
+		});
 	},
 });
 
@@ -85,6 +99,16 @@ export const cancelSlotBooking = mutation({
 		if (slot.bookedByUserId !== userId && slot.photographerId !== userId) {
 			throw new Error("Not authorized");
 		}
-		await ctx.db.patch(slotId, { bookedByUserId: undefined });
+		const bookedUserId = slot.bookedByUserId;
+		await ctx.db.patch(slotId, { bookedByUserId: undefined, bookedByPhone: undefined });
+
+		// Notify the person whose booking was cancelled (if it wasn't them who cancelled)
+		if (bookedUserId && bookedUserId !== userId) {
+			await ctx.scheduler.runAfter(0, internal.notifications.notifyUser, {
+				userId: bookedUserId,
+				title: "Booking Cancelled",
+				body: `Your photography session on ${slot.date} (${slot.startTime}–${slot.endTime}) has been cancelled.`,
+			});
+		}
 	},
 });

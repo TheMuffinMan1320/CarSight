@@ -33,6 +33,20 @@ export const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 
+	// Filter Bar
+	filterBarWrapper: { height: 50, justifyContent: "center", overflow: "hidden" },
+	filterBar: { flexDirection: "row", paddingHorizontal: 12, gap: 8, alignItems: "center", height: 50 },
+	filterChip: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		paddingHorizontal: 10,
+		height: 30,
+		borderRadius: 15,
+		borderWidth: 1.5,
+	},
+	filterChipText: { fontSize: 13, fontWeight: "600", includeFontPadding: false },
+
 	// Feed list / empty
 	feedList: { padding: 12, paddingBottom: 32 },
 	loadingWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -79,6 +93,7 @@ export const styles = StyleSheet.create({
 	typeBadge: {
 		flexDirection: "row",
 		alignItems: "center",
+		alignSelf: "flex-start",
 		gap: 4,
 		paddingHorizontal: 8,
 		paddingVertical: 4,

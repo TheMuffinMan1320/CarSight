@@ -1,5 +1,16 @@
-import React, { useCallback } from "react";
-import { View, Text, TouchableOpacity, Alert, Pressable } from "react-native";
+import React, { useCallback, useState } from "react";
+import {
+	View,
+	Text,
+	TouchableOpacity,
+	Alert,
+	Pressable,
+	Modal,
+	TextInput,
+	ScrollView,
+	KeyboardAvoidingView,
+	Platform,
+} from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "convex/react";
@@ -20,7 +31,16 @@ type Props = {
 export function PostCard({ post, onPressUser, onDelete, onPressComment }: Props) {
 	const { colors, tint } = useAppTheme();
 	const toggleLike = useMutation(api.posts.toggleLike);
+	const updatePost = useMutation(api.posts.updatePost);
 	const typeConfig = POST_TYPE_CONFIG[post.type];
+
+	const [editing, setEditing] = useState(false);
+	const [editCaption, setEditCaption] = useState(post.caption ?? "");
+	const [editBrand, setEditBrand] = useState(post.brand ?? "");
+	const [editModel, setEditModel] = useState(post.model ?? "");
+	const [editTitle, setEditTitle] = useState(post.title ?? "");
+	const [editLocation, setEditLocation] = useState(post.location ?? "");
+	const [editDate, setEditDate] = useState(post.eventDate ?? "");
 
 	const handleLike = useCallback(() => {
 		toggleLike({ postId: post._id });
@@ -28,11 +48,36 @@ export function PostCard({ post, onPressUser, onDelete, onPressComment }: Props)
 
 	const handleLongPress = useCallback(() => {
 		if (!post.isOwnPost) return;
-		Alert.alert("Delete Post", "Remove this post?", [
-			{ text: "Cancel", style: "cancel" },
+		Alert.alert("Post Options", undefined, [
+			{
+				text: "Edit",
+				onPress: () => {
+					setEditCaption(post.caption ?? "");
+					setEditBrand(post.brand ?? "");
+					setEditModel(post.model ?? "");
+					setEditTitle(post.title ?? "");
+					setEditLocation(post.location ?? "");
+					setEditDate(post.eventDate ?? "");
+					setEditing(true);
+				},
+			},
 			{ text: "Delete", style: "destructive", onPress: () => onDelete(post._id) },
+			{ text: "Cancel", style: "cancel" },
 		]);
-	}, [post._id, post.isOwnPost]);
+	}, [post]);
+
+	const handleSaveEdit = useCallback(async () => {
+		await updatePost({
+			postId: post._id,
+			caption: editCaption.trim() || undefined,
+			brand: editBrand.trim() || undefined,
+			model: editModel.trim() || undefined,
+			title: editTitle.trim() || undefined,
+			location: editLocation.trim() || undefined,
+			eventDate: editDate.trim() || undefined,
+		});
+		setEditing(false);
+	}, [post._id, editCaption, editBrand, editModel, editTitle, editLocation, editDate]);
 
 	return (
 		<Pressable onLongPress={handleLongPress}>
@@ -171,6 +216,82 @@ export function PostCard({ post, onPressUser, onDelete, onPressComment }: Props)
 					</View>
 				) : null}
 			</View>
+
+			{/* Edit Modal */}
+			<Modal visible={editing} animationType="slide" transparent presentationStyle="overFullScreen">
+				<KeyboardAvoidingView
+					style={{ flex: 1, justifyContent: "flex-end" }}
+					behavior={Platform.OS === "ios" ? "padding" : undefined}
+				>
+					<View style={[styles.modalOverlay, { justifyContent: "flex-end", backgroundColor: "transparent" }]}>
+						<View style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
+							<View style={styles.modalHeader}>
+								<TouchableOpacity onPress={() => setEditing(false)}>
+									<Text style={[styles.modalHeaderAction, { color: colors.textSecondary }]}>Cancel</Text>
+								</TouchableOpacity>
+								<Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Edit Post</Text>
+								<TouchableOpacity onPress={handleSaveEdit}>
+									<Text style={[styles.modalHeaderAction, { color: tint, textAlign: "right", fontWeight: "700" }]}>Save</Text>
+								</TouchableOpacity>
+							</View>
+							<ScrollView style={styles.detailsStep} keyboardShouldPersistTaps="handled">
+								{post.type === "spotted_car" && (
+									<>
+										<TextInput
+											style={[styles.input, { backgroundColor: colors.inputBg, color: colors.textPrimary }]}
+											placeholder="Brand"
+											placeholderTextColor={colors.textPlaceholder}
+											value={editBrand}
+											onChangeText={setEditBrand}
+										/>
+										<TextInput
+											style={[styles.input, { backgroundColor: colors.inputBg, color: colors.textPrimary }]}
+											placeholder="Model"
+											placeholderTextColor={colors.textPlaceholder}
+											value={editModel}
+											onChangeText={setEditModel}
+										/>
+									</>
+								)}
+								{(post.type === "car_meet" || post.type === "photography") && (
+									<>
+										<TextInput
+											style={[styles.input, { backgroundColor: colors.inputBg, color: colors.textPrimary }]}
+											placeholder="Title"
+											placeholderTextColor={colors.textPlaceholder}
+											value={editTitle}
+											onChangeText={setEditTitle}
+										/>
+										<TextInput
+											style={[styles.input, { backgroundColor: colors.inputBg, color: colors.textPrimary }]}
+											placeholder="Date"
+											placeholderTextColor={colors.textPlaceholder}
+											value={editDate}
+											onChangeText={setEditDate}
+										/>
+									</>
+								)}
+								<TextInput
+									style={[styles.input, { backgroundColor: colors.inputBg, color: colors.textPrimary }]}
+									placeholder="Location"
+									placeholderTextColor={colors.textPlaceholder}
+									value={editLocation}
+									onChangeText={setEditLocation}
+								/>
+								<TextInput
+									style={[styles.input, styles.captionInput, { backgroundColor: colors.inputBg, color: colors.textPrimary }]}
+									placeholder="Caption"
+									placeholderTextColor={colors.textPlaceholder}
+									value={editCaption}
+									onChangeText={setEditCaption}
+									multiline
+								/>
+								<View style={{ height: 24 }} />
+							</ScrollView>
+						</View>
+					</View>
+				</KeyboardAvoidingView>
+			</Modal>
 		</Pressable>
 	);
 }

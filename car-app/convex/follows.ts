@@ -72,6 +72,34 @@ export const getFollowerCount = query({
 	},
 });
 
+export const getFollowingUsers = query({
+	handler: async (ctx) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) return [];
+		const follows = await ctx.db
+			.query("follows")
+			.withIndex("by_follower", (q) => q.eq("followerId", userId))
+			.collect();
+		return await Promise.all(
+			follows.map(async (f) => {
+				const profile = await ctx.db
+					.query("userProfile")
+					.withIndex("by_user", (q) => q.eq("userId", f.followingId))
+					.first();
+				const imageUrl = profile?.imageStorageId
+					? await ctx.storage.getUrl(profile.imageStorageId)
+					: null;
+				return {
+					userId: f.followingId,
+					displayName: profile?.displayName ?? "Car Spotter",
+					isPhotographer: profile?.isPhotographer ?? false,
+					imageUrl,
+				};
+			})
+		);
+	},
+});
+
 export const getFollowingCount = query({
 	args: { userId: v.id("users") },
 	handler: async (ctx, { userId }) => {

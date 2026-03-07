@@ -16,12 +16,14 @@ type Props = {
 	userId: Id<"users">;
 	currentUserId: Id<"users"> | null;
 	onClose: () => void;
+	mode?: "posts" | "collection";
 };
 
-export function UserProfileSheet({ userId, currentUserId, onClose }: Props) {
+export function UserProfileSheet({ userId, currentUserId, onClose, mode = "posts" }: Props) {
 	const { colors, tint, isDark } = useAppTheme();
 	const profile = useQuery(api.userProfile.getProfileById, { userId });
 	const posts = useQuery(api.posts.getPostsByUser, { targetUserId: userId });
+	const collection = useQuery(api.spottedCars.getSpottedCarsByUser, { userId });
 	const following = useQuery(api.follows.isFollowing, { targetUserId: userId });
 	const followerCount = useQuery(api.follows.getFollowerCount, { targetUserId: userId });
 	const followingCount = useQuery(api.follows.getFollowingCount, { userId });
@@ -36,11 +38,8 @@ export function UserProfileSheet({ userId, currentUserId, onClose }: Props) {
 	const handleFollowToggle = async () => {
 		setFollowLoading(true);
 		try {
-			if (following) {
-				await unfollowUser({ targetUserId: userId });
-			} else {
-				await followUser({ targetUserId: userId });
-			}
+			if (following) await unfollowUser({ targetUserId: userId });
+			else await followUser({ targetUserId: userId });
 		} finally {
 			setFollowLoading(false);
 		}
@@ -130,26 +129,63 @@ export function UserProfileSheet({ userId, currentUserId, onClose }: Props) {
 					</TouchableOpacity>
 				) : null}
 
-				{/* Posts grid */}
-				<Text style={[styles.profileGridTitle, { color: colors.textSecondary }]}>POSTS</Text>
-				{posts === undefined ? (
-					<ActivityIndicator color={tint} style={{ paddingVertical: 32 }} />
-				) : posts.length === 0 ? (
-					<Text style={[styles.profileNoPosts, { color: colors.textSecondary }]}>No posts yet</Text>
-				) : (
-					<View style={styles.postsGrid}>
-						{posts.map((post) => (
-							<View key={post._id} style={styles.gridCell}>
-								{post.imageUrl ? (
-									<Image source={{ uri: post.imageUrl }} style={styles.gridImage} contentFit="cover" />
-								) : (
-									<View style={[styles.gridImagePlaceholder, { backgroundColor: colors.searchBg }]}>
-										<PostTypeIcon type={post.type as PostType} size={28} color={colors.textSecondary} />
+				{/* Grid section — posts or collection depending on mode */}
+				{mode === "collection" ? (
+					<>
+						<Text style={[styles.profileGridTitle, { color: colors.textSecondary }]}>SPOTTED</Text>
+						{collection === undefined ? (
+							<ActivityIndicator color={tint} style={{ paddingVertical: 32 }} />
+						) : collection.length === 0 ? (
+							<Text style={[styles.profileNoPosts, { color: colors.textSecondary }]}>No cars spotted yet</Text>
+						) : (
+							<View style={styles.postsGrid}>
+								{collection.map((car) => (
+									<View key={car._id} style={styles.gridCell}>
+										{car.imageUrl ? (
+											<>
+											<Image source={{ uri: car.imageUrl }} style={styles.gridImage} contentFit="cover" />
+											<View style={{ position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.45)", paddingVertical: 3, paddingHorizontal: 4 }}>
+												<Text style={{ fontSize: 10, color: "#fff", fontWeight: "600", textAlign: "center" }} numberOfLines={1}>
+													{car.brand} {car.model}
+												</Text>
+											</View>
+										</>
+										) : (
+											<View style={[styles.gridImagePlaceholder, { backgroundColor: colors.searchBg }]}>
+												<Ionicons name="car-sport-outline" size={28} color={colors.textSecondary} />
+												<Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 4, textAlign: "center", paddingHorizontal: 4 }} numberOfLines={1}>
+													{car.brand} {car.model}
+												</Text>
+											</View>
+										)}
 									</View>
-								)}
+								))}
 							</View>
-						))}
-					</View>
+						)}
+					</>
+				) : (
+					<>
+						<Text style={[styles.profileGridTitle, { color: colors.textSecondary }]}>POSTS</Text>
+						{posts === undefined ? (
+							<ActivityIndicator color={tint} style={{ paddingVertical: 32 }} />
+						) : posts.length === 0 ? (
+							<Text style={[styles.profileNoPosts, { color: colors.textSecondary }]}>No posts yet</Text>
+						) : (
+							<View style={styles.postsGrid}>
+								{posts.map((post) => (
+									<View key={post._id} style={styles.gridCell}>
+										{post.imageUrl ? (
+											<Image source={{ uri: post.imageUrl }} style={styles.gridImage} contentFit="cover" />
+										) : (
+											<View style={[styles.gridImagePlaceholder, { backgroundColor: colors.searchBg }]}>
+												<PostTypeIcon type={post.type as PostType} size={28} color={colors.textSecondary} />
+											</View>
+										)}
+									</View>
+								))}
+							</View>
+						)}
+					</>
 				)}
 
 				{/* Book a Session */}

@@ -68,6 +68,7 @@ export default defineSchema({
 		price: v.number(),
 		description: v.optional(v.string()),
 		bookedByUserId: v.optional(v.id("users")),
+		bookedByPhone: v.optional(v.string()),
 	})
 		.index("by_photographer", ["photographerId"])
 		.index("by_photographer_date", ["photographerId", "date"]),

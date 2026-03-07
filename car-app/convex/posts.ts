@@ -46,7 +46,34 @@ export const createPost = mutation({
 export const getFeedPosts = query({
 	handler: async (ctx) => {
 		const userId = await getAuthUserId(ctx);
-		const posts = await ctx.db.query("posts").order("desc").take(50);
+
+		// Collect IDs of users the current user follows
+		const followedUserIds = userId
+			? (
+					await ctx.db
+						.query("follows")
+						.withIndex("by_follower", (q) => q.eq("followerId", userId))
+						.collect()
+				).map((f) => f.followingId)
+			: [];
+
+		// Include own posts + followed users' posts, fetched per user via index
+		const authorIds = [...(userId ? [userId] : []), ...followedUserIds];
+
+		const postsByAuthor = await Promise.all(
+			authorIds.map((uid) =>
+				ctx.db
+					.query("posts")
+					.withIndex("by_user", (q) => q.eq("userId", uid))
+					.order("desc")
+					.take(20)
+			)
+		);
+
+		const posts = postsByAuthor
+			.flat()
+			.sort((a, b) => b._creationTime - a._creationTime)
+			.slice(0, 50);
 
 		return await Promise.all(
 			posts.map(async (post) => {
@@ -212,6 +239,25 @@ export const toggleLike = mutation({
 		} else {
 			await ctx.db.insert("postLikes", { userId, postId });
 		}
+	},
+});
+
+export const updatePost = mutation({
+	args: {
+		postId: v.id("posts"),
+		caption: v.optional(v.string()),
+		brand: v.optional(v.string()),
+		model: v.optional(v.string()),
+		title: v.optional(v.string()),
+		location: v.optional(v.string()),
+		eventDate: v.optional(v.string()),
+	},
+	handler: async (ctx, { postId, ...fields }) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+		const post = await ctx.db.get(postId);
+		if (!post || post.userId !== userId) throw new Error("Not authorized");
+		await ctx.db.patch(postId, fields);
 	},
 });
 

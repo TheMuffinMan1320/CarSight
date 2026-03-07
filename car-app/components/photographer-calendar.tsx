@@ -99,6 +99,11 @@ export default function PhotographerCalendar({
 	const [pickerMode, setPickerMode] = useState<"start" | "end" | null>(null);
 	const [adding, setAdding] = useState(false);
 
+	// Booking phone flow
+	const [bookingSlotId, setBookingSlotId] = useState<Id<"availability"> | null>(null);
+	const [bookingPhone, setBookingPhone] = useState("");
+	const [booking, setBooking] = useState(false);
+
 	const slots = useQuery(api.availability.getSlotsForPhotographer, { photographerId });
 	const addSlotMut = useMutation(api.availability.addSlot);
 	const deleteSlotMut = useMutation(api.availability.deleteSlot);
@@ -198,14 +203,26 @@ export default function PhotographerCalendar({
 	};
 
 	const handleBook = (slotId: Id<"availability">) => {
-		Alert.alert("Confirm Booking", "Book this photography session?", [
-			{ text: "Cancel", style: "cancel" },
-			{
-				text: "Book Now",
-				onPress: () =>
-					bookSlotMut({ slotId }).catch((e) => Alert.alert("Error", e.message ?? "Failed to book.")),
-			},
-		]);
+		setBookingSlotId(slotId);
+		setBookingPhone("");
+	};
+
+	const confirmBook = async () => {
+		if (!bookingSlotId) return;
+		const phone = bookingPhone.trim();
+		if (!phone) {
+			Alert.alert("Phone required", "Please enter your phone number.");
+			return;
+		}
+		setBooking(true);
+		try {
+			await bookSlotMut({ slotId: bookingSlotId, phone });
+			setBookingSlotId(null);
+		} catch (e: any) {
+			Alert.alert("Error", e.message ?? "Failed to book.");
+		} finally {
+			setBooking(false);
+		}
 	};
 
 	const handleCancel = (slotId: Id<"availability">) => {
@@ -370,12 +387,19 @@ export default function PhotographerCalendar({
 															</Text>
 														</View>
 													)}
-													<Text style={[s.bookedByText, { color: textSecondary }]}>
-														Booked by{" "}
-														<Text style={{ color: textPrimary, fontWeight: "700" }}>
-															{slot.clientName}
+													<View>
+														<Text style={[s.bookedByText, { color: textSecondary }]}>
+															Booked by{" "}
+															<Text style={{ color: textPrimary, fontWeight: "700" }}>
+																{slot.clientName}
+															</Text>
 														</Text>
-													</Text>
+														{slot.clientPhone ? (
+															<Text style={[s.bookedByText, { color: textSecondary, marginTop: 1 }]}>
+																📞 {slot.clientPhone}
+															</Text>
+														) : null}
+													</View>
 												</View>
 											) : (
 												<View style={[s.availablePill, { backgroundColor: tint + "18" }]}>
@@ -426,7 +450,53 @@ export default function PhotographerCalendar({
 				</View>
 			) : null}
 
-			{/* ── Add Slot Modal ── */}
+			{/* ── Book Slot Modal (phone input) ── */}
+		<Modal
+			visible={bookingSlotId !== null}
+			animationType="slide"
+			transparent
+			presentationStyle="overFullScreen"
+			onRequestClose={() => setBookingSlotId(null)}
+		>
+			<KeyboardAvoidingView
+				style={m.overlay}
+				behavior={Platform.OS === "ios" ? "padding" : undefined}
+			>
+				<View style={[m.sheet, { backgroundColor: isDark ? "#151718" : "#FFFFFF" }]}>
+					<View style={m.header}>
+						<TouchableOpacity onPress={() => setBookingSlotId(null)}>
+							<Text style={[m.headerBtn, { color: textSecondary }]}>Cancel</Text>
+						</TouchableOpacity>
+						<Text style={[m.headerTitle, { color: textPrimary }]}>Book Session</Text>
+						<TouchableOpacity onPress={confirmBook} disabled={booking}>
+							{booking ? (
+								<ActivityIndicator size="small" color={tint} />
+							) : (
+								<Text style={[m.headerBtn, { color: tint, fontWeight: "700" }]}>Confirm</Text>
+							)}
+						</TouchableOpacity>
+					</View>
+					<View style={{ paddingHorizontal: 20, paddingBottom: 40, gap: 8 }}>
+						<Text style={[m.label, { color: textSecondary }]}>YOUR PHONE NUMBER</Text>
+						<TextInput
+							style={[m.input, { backgroundColor: isDark ? "#252538" : "#F5F5F8", color: textPrimary }]}
+							placeholder="e.g. +1 555 000 1234"
+							placeholderTextColor={isDark ? "#4A5568" : "#A0AEC0"}
+							value={bookingPhone}
+							onChangeText={setBookingPhone}
+							keyboardType="phone-pad"
+							returnKeyType="done"
+							autoFocus
+						/>
+						<Text style={[{ fontSize: 12, color: textSecondary, lineHeight: 17 }]}>
+							Your number will be shared with the photographer so they can contact you.
+						</Text>
+					</View>
+				</View>
+			</KeyboardAvoidingView>
+		</Modal>
+
+		{/* ── Add Slot Modal ── */}
 			<Modal
 				visible={showAddSlot}
 				animationType="slide"

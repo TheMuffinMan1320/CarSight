@@ -10,6 +10,7 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
+	Switch,
 } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -32,6 +33,8 @@ export function CreatePostModal({ visible, onClose }: Props) {
 	const { colors, tint } = useAppTheme();
 	const createPost = useMutation(api.posts.createPost);
 	const generateUploadUrl = useMutation(api.posts.generateUploadUrl);
+	const addSpottedCar = useMutation(api.spottedCars.addSpottedCar);
+	const generateCarUploadUrl = useMutation(api.spottedCars.generateUploadUrl);
 
 	const [step, setStep] = useState<"type" | "details">("type");
 	const [postType, setPostType] = useState<PostType>("spotted_car");
@@ -44,6 +47,7 @@ export function CreatePostModal({ visible, onClose }: Props) {
 	const [eventDate, setEventDate] = useState("");
 	const [posting, setPosting] = useState(false);
 	const [fetchingLocation, setFetchingLocation] = useState(false);
+	const [addToCollection, setAddToCollection] = useState(false);
 
 	const typeOptionBg = colors.inputBg;
 
@@ -59,6 +63,7 @@ export function CreatePostModal({ visible, onClose }: Props) {
 		setEventDate("");
 		setPosting(false);
 		setFetchingLocation(false);
+		setAddToCollection(false);
 	};
 
 	const handleClose = () => {
@@ -143,6 +148,26 @@ export function CreatePostModal({ visible, onClose }: Props) {
 				location: location.trim() || undefined,
 				eventDate: eventDate.trim() || undefined,
 			});
+			if (postType === "spotted_car" && addToCollection && (brand.trim() || model.trim())) {
+				let collectionStorageId: Id<"_storage"> | undefined;
+				if (imageUri) {
+					const uploadUrl = await generateCarUploadUrl();
+					const blob = await (await fetch(imageUri)).blob();
+					const res = await fetch(uploadUrl, {
+						method: "POST",
+						headers: { "Content-Type": blob.type },
+						body: blob,
+					});
+					const { storageId } = await res.json();
+					collectionStorageId = storageId;
+				}
+				await addSpottedCar({
+					brand: brand.trim() || "Unknown",
+					model: model.trim() || "Unknown",
+					spottedDate: new Date().toISOString(),
+					imageStorageId: collectionStorageId,
+				});
+			}
 			handleClose();
 		} catch {
 			Alert.alert("Error", "Failed to post. Please try again.");
@@ -324,6 +349,18 @@ export function CreatePostModal({ visible, onClose }: Props) {
 												<Text style={[styles.locationBtnText, { color: tint }]}>📍 Use Current</Text>
 											)}
 										</TouchableOpacity>
+									</View>
+									<View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 4, paddingTop: 4 }}>
+										<View style={{ flex: 1 }}>
+											<Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Add to Collection</Text>
+											<Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Save this car to your personal collection</Text>
+										</View>
+										<Switch
+											value={addToCollection}
+											onValueChange={setAddToCollection}
+											trackColor={{ false: colors.switchTrackOff, true: tint }}
+											thumbColor={addToCollection ? colors.iconOnTint : "#FFFFFF"}
+										/>
 									</View>
 								</View>
 							) : (

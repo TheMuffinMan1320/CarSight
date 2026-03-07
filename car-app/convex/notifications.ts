@@ -2,6 +2,38 @@ import { internalAction, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
+async function sendPushMessages(messages: object[]) {
+	const chunks: object[][] = [];
+	for (let i = 0; i < messages.length; i += 100) chunks.push(messages.slice(i, i + 100));
+	for (const chunk of chunks) {
+		await fetch("https://exp.host/--/api/v2/push/send", {
+			method: "POST",
+			headers: { "Content-Type": "application/json", Accept: "application/json", "Accept-Encoding": "gzip, deflate" },
+			body: JSON.stringify(chunk),
+		});
+	}
+}
+
+export const getPushTokenForUser = internalQuery({
+	args: { userId: v.id("users") },
+	handler: async (ctx, { userId }) => {
+		const profile = await ctx.db
+			.query("userProfile")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.first();
+		return profile?.pushToken ?? null;
+	},
+});
+
+export const notifyUser = internalAction({
+	args: { userId: v.id("users"), title: v.string(), body: v.string() },
+	handler: async (ctx, { userId, title, body }) => {
+		const token: string | null = await ctx.runQuery(internal.notifications.getPushTokenForUser, { userId });
+		if (!token) return;
+		await sendPushMessages([{ to: token, title, body, sound: "default" }]);
+	},
+});
+
 export const getWatchlistPushTokens = internalQuery({
 	args: { brand: v.string(), model: v.string(), posterUserId: v.id("users") },
 	handler: async (ctx, { brand, model, posterUserId }) => {
