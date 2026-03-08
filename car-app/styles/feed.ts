@@ -88,7 +88,7 @@ export const styles = StyleSheet.create({
 	headerNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
 	authorName: { fontSize: 14, fontWeight: "700" },
 	proBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
-	proBadgeText: { fontSize: 10, fontWeight: "600", color: "#7B2D8B" },
+	proBadgeText: { fontSize: 10, fontWeight: "600", color: "#C9A84C" },
 	postTime: { fontSize: 12, marginTop: 2 },
 	typeBadge: {
 		flexDirection: "row",

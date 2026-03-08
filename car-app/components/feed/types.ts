@@ -26,7 +26,7 @@ export type FeedPost = {
 export const POST_TYPE_CONFIG = {
 	spotted_car: { label: "Car Spot", icon: "🚗", color: "#0a7ea4" },
 	car_meet: { label: "Car Meet", icon: "🏁", color: "#E85D04" },
-	photography: { label: "Photography", icon: "📸", color: "#7B2D8B" },
+	photography: { label: "Photography", icon: "📸", color: "#C9A84C" },
 } as const;
 
 export function timeAgo(ms: number) {

@@ -75,8 +75,8 @@ export function UserProfileSheet({ userId, currentUserId, onClose, mode = "posts
 					{profile?.isPhotographer ? (
 						<View style={[styles.profilePhotoBadge, { backgroundColor: colors.photographyBg }]}>
 							<View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-								<Ionicons name="camera-outline" size={13} color="#7B2D8B" />
-								<Text style={[styles.profilePhotoBadgeText, { color: "#7B2D8B" }]}>Photographer</Text>
+								<Ionicons name="camera-outline" size={13} color="#C9A84C" />
+								<Text style={[styles.profilePhotoBadgeText, { color: "#C9A84C" }]}>Photographer</Text>
 							</View>
 						</View>
 					) : null}

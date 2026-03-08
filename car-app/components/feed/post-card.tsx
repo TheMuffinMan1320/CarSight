@@ -105,7 +105,7 @@ export function PostCard({ post, onPressUser, onDelete, onPressComment }: Props)
 							{post.isPhotographer && (
 								<View style={[styles.proBadge, { backgroundColor: colors.photographyBg }]}>
 									<View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-										<Ionicons name="camera-outline" size={10} color="#7B2D8B" />
+										<Ionicons name="camera-outline" size={10} color="#C9A84C" />
 										<Text style={styles.proBadgeText}>Pro</Text>
 									</View>
 								</View>

@@ -50,7 +50,7 @@ export const AppColors = {
     iconOnTint: '#FFFFFF',       // icon / text rendered on a tint-coloured surface
     iconInactive: '#C7C7CC',     // inactive close / dismiss icons
     switchTrackOff: '#D1D1D6',   // switch track (off state) and handle bar
-    photographyBg: '#F3E8FF',    // photographer badge background
+    photographyBg: '#FBF3DC',    // photographer badge background
   },
   dark: {
     pageBg: '#0F0F17',
@@ -70,7 +70,7 @@ export const AppColors = {
     iconOnTint: '#11181C',
     iconInactive: '#3A3A4E',
     switchTrackOff: '#3A3A4E',
-    photographyBg: '#2A1A3E',
+    photographyBg: '#2E2610',
   },
 };
 
