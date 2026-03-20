@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.CarSight"
+      "bundleIdentifier": "com.anonymous.CarSight",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CarSight uses your camera to identify and photograph cars."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -32,7 +35,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
