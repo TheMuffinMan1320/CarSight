@@ -2,6 +2,12 @@
 
 A social car spotting platform for iOS built with Expo and React Native. CarSight lets users identify cars with on-device AI, build a personal spotted car collection, follow other enthusiasts, and book professional automotive photographers.
 
+![CarSight demo](demo.gif)
+
+*Recorded on the iOS Simulator — Profile, Collection, Watchlist, and the social Feed. The
+Identify screen's camera view is blank because the Simulator has no camera hardware; the
+on-device CoreML/TFLite identification only runs on a real device.*
+
 ---
 
 ## Features
